@@ -22,12 +22,12 @@ async function loadStatus() {
 
   data.forEach(site => {
     const card = document.createElement("div");
-    card.className = "card " + (site.status === "Online" ? "online" : "offline");
+    card.className = "card " + (site.status === "Онлайн" ? "онлайн" : "оффлайн");
 
     card.innerHTML = `
       <h2>${site.url}</h2>
       <p>Status: <strong>${site.status}</strong></p>
-      <p>Last downtime: ${site.last_downtime ?? "Тест недоступности не определено"}</p>
+      <p>Last downtime: ${site.last_downtime ?? "Недоступность не определена (она отсутствовала)"}</p>
       ${site.last_error ? `<p class="error">${site.last_error}</p>` : ""}
     `;
     container.appendChild(card);
