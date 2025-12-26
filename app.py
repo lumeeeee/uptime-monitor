@@ -54,6 +54,7 @@ def monitor_loop():
 
     while True:
         for url in config["sites"]:
+            print(f"[CHECK] {datetime.now(timezone.utc).isoformat()}")=
             status, error = check_site(url)
             now = datetime.now(timezone.utc).isoformat()
             if status == "offline":
