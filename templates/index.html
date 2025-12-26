@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Проверка состояния</title>
+<link rel="stylesheet" href="/static/style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+
+<h1>Проверка состояния</h1>
+<p class="meta">Проверяется каждые 5 минут • Формат времени: UTC</p>
+
+<div id="cards"></div>
+
+<script>
+async function loadStatus() {
+  const res = await fetch("/api/status");
+  const data = await res.json();
+  const container = document.getElementById("cards");
+  container.innerHTML = "";
+
+  data.forEach(site => {
+    const card = document.createElement("div");
+    card.className = "card " + (site.status === "Online" ? "online" : "offline");
+
+    card.innerHTML = `
+      <h2>${site.url}</h2>
+      <p>Status: <strong>${site.status}</strong></p>
+      <p>Last downtime: ${site.last_downtime ?? "Время недоступности не определено"}</p>
+      ${site.last_error ? `<p class="error">${site.last_error}</p>` : ""}
+    `;
+    container.appendChild(card);
+  });
+}
+
+loadStatus();
+setInterval(loadStatus, 30000);
+</script>
+
+</body>
+</html>
+

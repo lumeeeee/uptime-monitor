@@ -1,0 +1,6 @@
+{
+  "check_interval_seconds": 300,
+  "sites": [
+    "https://ya.ru"
+  ]
+}

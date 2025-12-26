@@ -1,0 +1,6 @@
+uptime.db
+__pycache__/
+*.pyc
+*.log
+uptime-venv/
+
