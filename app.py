@@ -22,6 +22,17 @@ def init_db():
         )
         """)
 
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS downtime_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            url TEXT,
+            timestamp TEXT,
+            error TEXT
+        )
+        """)
+
+    
+
 def load_config():
     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
@@ -45,6 +56,15 @@ def monitor_loop():
         for url in config["sites"]:
             status, error = check_site(url)
             now = datetime.now(timezone.utc).isoformat()
+            if status == "offline":
+                conn = sqlite3.connect(DB_FILE)
+                conn.execute(
+                "INSERT INTO downtime_log (url, timestamp, error) VALUES (?, ?, ?)",
+                (url, now, error)
+                )
+                conn.commit()
+                conn.close()
+
 
             with sqlite3.connect(DB_FILE) as conn:
                 cur = conn.cursor()
@@ -85,3 +105,16 @@ if __name__ == "__main__":
     init_db()
     threading.Thread(target=monitor_loop, daemon=True).start()
     app.run(host="0.0.0.0", port=8000)
+
+@app.route("/api/downtime-log")
+def api_downtime_log():
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute("""
+            SELECT url, timestamp, error
+            FROM downtime_log
+            ORDER BY id DESC
+            LIMIT 30
+        """).fetchall()
+
+        return jsonify([dict(r) for r in rows])

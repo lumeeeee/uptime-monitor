@@ -39,3 +39,15 @@ h1 {
   color: #e74c3c;
 }
 
+#log {
+  margin-top: 20px;
+}
+
+.log-item {
+  padding: 10px;
+  margin-bottom: 10px;
+  border-left: 4px solid #c0392b;
+  background: #fafafa;
+  font-size: 14px;
+}
+
