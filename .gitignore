@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.pyc
+
+# SQLite
+*.db
+
+# Docker
+.env
+
+# OS
+.DS_Store

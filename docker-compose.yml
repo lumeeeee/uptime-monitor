@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  monitor:
+    build: ./backend
+    container_name: uptime-monitor
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./frontend:/app/frontend:ro
+      - monitor_data:/data
+      - ./backend/config.yaml:/app/config.yaml:ro
+    restart: unless-stopped
+
+volumes:
+  monitor_data:
