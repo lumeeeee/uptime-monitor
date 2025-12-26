@@ -11,6 +11,8 @@ CONFIG_FILE = "sites.json"
 
 app = Flask(__name__)
 
+# ---------- DB ----------
+
 def init_db():
     with sqlite3.connect(DB_FILE) as conn:
         conn.execute("""
@@ -31,11 +33,13 @@ def init_db():
         )
         """)
 
-    
+# ---------- CONFIG ----------
 
 def load_config():
     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
+
+# ---------- CHECK ----------
 
 def check_site(url):
     try:
@@ -48,48 +52,62 @@ def check_site(url):
     except requests.exceptions.RequestException:
         return "offline", "connection_error"
 
+# ---------- MONITOR LOOP ----------
+
 def monitor_loop():
     config = load_config()
     interval = config["check_interval_seconds"]
 
+    print(f"[MONITOR] started, interval = {interval} seconds")
+
     while True:
+        cycle_time = datetime.now(timezone.utc).isoformat()
+        print(f"[MONITOR] check cycle started at {cycle_time}")
+
         for url in config["sites"]:
-            print(f"[CHECK] {datetime.now(timezone.utc).isoformat()}")=
             status, error = check_site(url)
             now = datetime.now(timezone.utc).isoformat()
-            if status == "offline":
-                conn = sqlite3.connect(DB_FILE)
-                conn.execute(
-                "INSERT INTO downtime_log (url, timestamp, error) VALUES (?, ?, ?)",
-                (url, now, error)
-                )
-                conn.commit()
-                conn.close()
-
 
             with sqlite3.connect(DB_FILE) as conn:
                 cur = conn.cursor()
+
                 cur.execute("SELECT status FROM sites WHERE url=?", (url,))
                 row = cur.fetchone()
 
+                # first time
                 if row is None:
                     cur.execute(
                         "INSERT INTO sites VALUES (?, ?, ?, ?)",
                         (url, status, None, error)
                     )
-                else:
-                    if status == "offline" and row[0] == "online":
-                        cur.execute(
-                            "UPDATE sites SET status=?, last_downtime=?, last_error=? WHERE url=?",
-                            (status, now, error, url)
-                        )
-                    else:
-                        cur.execute(
-                            "UPDATE sites SET status=?, last_error=? WHERE url=?",
-                            (status, error, url)
-                        )
 
+                # transition online -> offline
+                elif status == "offline" and row[0] == "online":
+                    cur.execute(
+                        "UPDATE sites SET status=?, last_downtime=?, last_error=? WHERE url=?",
+                        (status, now, error, url)
+                    )
+
+                # normal update
+                else:
+                    cur.execute(
+                        "UPDATE sites SET status=?, last_error=? WHERE url=?",
+                        (status, error, url)
+                    )
+
+                # LOG EVERY OFFLINE CHECK
+                if status == "offline":
+                    cur.execute(
+                        "INSERT INTO downtime_log (url, timestamp, error) VALUES (?, ?, ?)",
+                        (url, now, error)
+                    )
+
+                conn.commit()
+
+        print(f"[MONITOR] check cycle finished, sleeping {interval} seconds\n")
         time.sleep(interval)
+
+# ---------- ROUTES ----------
 
 @app.route("/")
 def index():
@@ -102,11 +120,6 @@ def api_status():
         rows = conn.execute("SELECT * FROM sites").fetchall()
         return jsonify([dict(r) for r in rows])
 
-if __name__ == "__main__":
-    init_db()
-    threading.Thread(target=monitor_loop, daemon=True).start()
-    app.run(host="0.0.0.0", port=8000)
-
 @app.route("/api/downtime-log")
 def api_downtime_log():
     with sqlite3.connect(DB_FILE) as conn:
@@ -117,5 +130,11 @@ def api_downtime_log():
             ORDER BY id DESC
             LIMIT 30
         """).fetchall()
-
         return jsonify([dict(r) for r in rows])
+
+# ---------- START ----------
+
+if __name__ == "__main__":
+    init_db()
+    threading.Thread(target=monitor_loop, daemon=True).start()
+    app.run(host="0.0.0.0", port=8000)
