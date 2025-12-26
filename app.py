@@ -30,12 +30,12 @@ def check_site(url):
     try:
         r = requests.get(url, timeout=10)
         if r.status_code >= 500:
-            return "Работает", f"HTTP {r.status_code}"
-        return "В сети", None
+            return "offline", f"HTTP {r.status_code}"
+        return "online", None
     except requests.exceptions.Timeout:
-        return "Не работает", "Timeout"
+        return "offline", "timeout"
     except requests.exceptions.RequestException:
-        return "Не работает", "DNS / Connection error"
+        return "offline", "connection_error"
 
 def monitor_loop():
     config = load_config()
@@ -57,7 +57,7 @@ def monitor_loop():
                         (url, status, None, error)
                     )
                 else:
-                    if status == "Offline" and row[0] == "Online":
+                    if status == "offline" and row[0] == "online":
                         cur.execute(
                             "UPDATE sites SET status=?, last_downtime=?, last_error=? WHERE url=?",
                             (status, now, error, url)

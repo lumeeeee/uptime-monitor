@@ -1,27 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Проверка состояния</title>
+<title>Мониторинг доступности</title>
 <link rel="stylesheet" href="/static/style.css">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
 
-<h1>Проверка состояния</h1>
-<p class="meta">Проверяется каждые 5 минут • Формат времени: UTC+3 (Москва)</p>
+<h1>Мониторинг доступности</h1>
+<p class="meta">Проверяется каждые 5 минут • Время: UTC+3 (Москва)</p>
 
 <div id="cards"></div>
 
 <script>
-function formatMoscowTime(isoString) {
-  if (!isoString) {
-    return "Недоступность не определена (она отсутствовала)";
-  }
+function formatMoscowTime(iso) {
+  if (!iso) return "Недоступность не зафиксирована";
 
-  const date = new Date(isoString);
-
-  return date.toLocaleString("ru-RU", {
+  return new Date(iso).toLocaleString("ru-RU", {
     timeZone: "Europe/Moscow",
     year: "numeric",
     month: "2-digit",
@@ -33,22 +29,24 @@ function formatMoscowTime(isoString) {
 }
 
 async function loadStatus() {
-async function loadStatus() {
   const res = await fetch("/api/status");
   const data = await res.json();
   const container = document.getElementById("cards");
   container.innerHTML = "";
 
   data.forEach(site => {
+    const isOnline = site.status === "online";
+
     const card = document.createElement("div");
-    card.className = "card " + (site.status === "Онлайн" ? "онлайн" : "оффлайн");
+    card.className = "card " + (isOnline ? "online" : "offline");
 
     card.innerHTML = `
       <h2>${site.url}</h2>
-      <p>Текущее состояние: <strong>${site.status}</strong></p>
-      <p>Последний офлайн: ${formatMoscowTime(site.last_downtime)}</p>
-      ${site.last_error ? `<p class="error">${site.last_error}</p>` : ""}
+      <p>Статус: <strong>${isOnline ? "Доступен" : "Недоступен"}</strong></p>
+      <p>Последняя недоступность: ${formatMoscowTime(site.last_downtime)}</p>
+      ${site.last_error ? `<p class="error">Ошибка: ${site.last_error}</p>` : ""}
     `;
+
     container.appendChild(card);
   });
 }
