@@ -96,7 +96,7 @@ def monitor_loop():
                     )
 
                 # LOG EVERY OFFLINE CHECK
-                if status == "offline":
+                if status == "offline" and row and row[0] == "online":
                     cur.execute(
                         "INSERT INTO downtime_log (url, timestamp, error) VALUES (?, ?, ?)",
                         (url, now, error)
