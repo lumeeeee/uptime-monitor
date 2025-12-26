@@ -1,6 +1,8 @@
 {
   "check_interval_seconds": 300,
+  "admin_secret": "problem",
   "sites": [
-    "https://ya.ru"
+    "https://ya.ru",
+    "https://test123123123125512.ru"
   ]
 }

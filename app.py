@@ -5,6 +5,8 @@ import sqlite3
 import requests
 from datetime import datetime, timezone
 from flask import Flask, jsonify, render_template
+from flask import request, abort
+
 
 DB_FILE = "uptime.db"
 CONFIG_FILE = "sites.json"
@@ -120,7 +122,12 @@ def monitor_loop():
 
 @app.route("/")
 def index():
+
     return render_template("index.html")
+
+@app.route("/admin", methods=["GET", "POST"])
+def admin():
+    return render_template("admin.html", sites=rows)
 
 @app.route("/api/status")
 def api_status():
@@ -158,3 +165,32 @@ def send_telegram(chat_id, text):
         "chat_id": chat_id,
         "text": text
     })
+
+@app.route("/admin", methods=["GET", "POST"])
+def admin():
+    config = load_config()
+    secret = config.get("admin_secret")
+
+    if request.method == "POST":
+        provided = request.form.get("secret")
+        url = request.form.get("url")
+        chat_id = request.form.get("chat_id")
+
+        if provided != secret:
+            abort(403)
+
+        with sqlite3.connect(DB_FILE) as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO site_notifications (url, telegram_chat_id) VALUES (?, ?)",
+                (url, chat_id)
+            )
+            conn.commit()
+
+    with sqlite3.connect(DB_FILE) as conn:
+        rows = conn.execute("""
+            SELECT s.url, n.telegram_chat_id
+            FROM sites s
+            LEFT JOIN site_notifications n ON s.url = n.url
+        """).fetchall()
+
+    return render_template("admin.html", sites=rows)
