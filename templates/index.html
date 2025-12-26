@@ -27,7 +27,7 @@ async function loadStatus() {
     card.innerHTML = `
       <h2>${site.url}</h2>
       <p>Status: <strong>${site.status}</strong></p>
-      <p>Last downtime: ${site.last_downtime ?? "Время недоступности не определено"}</p>
+      <p>Last downtime: ${site.last_downtime ?? "Тест недоступности не определено"}</p>
       ${site.last_error ? `<p class="error">${site.last_error}</p>` : ""}
     `;
     container.appendChild(card);
