@@ -32,6 +32,13 @@ def init_db():
             error TEXT
         )
         """)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS site_notifications (
+            url TEXT PRIMARY KEY,
+            telegram_chat_id TEXT
+        )
+        """)
+
 
 # ---------- CONFIG ----------
 
@@ -84,8 +91,8 @@ def monitor_loop():
                 # transition online -> offline
                 elif status == "offline" and row[0] == "online":
                     cur.execute(
-                        "UPDATE sites SET status=?, last_downtime=?, last_error=? WHERE url=?",
-                        (status, now, error, url)
+                    "UPDATE sites SET status=?, last_downtime=?, last_error=? WHERE url=?",
+                    (status, now, error, url)
                     )
 
                 # normal update
@@ -93,16 +100,18 @@ def monitor_loop():
                     cur.execute(
                         "UPDATE sites SET status=?, last_error=? WHERE url=?",
                         (status, error, url)
-                    )
+                )
 
                 # LOG EVERY OFFLINE CHECK
                 if status == "offline" and row and row[0] == "online":
-                    cur.execute(
+                     cur.execute(
                         "INSERT INTO downtime_log (url, timestamp, error) VALUES (?, ?, ?)",
-                        (url, now, error)
+                         (url, now, error)
                     )
-
+                     
                 conn.commit()
+    
+    
 
         print(f"[MONITOR] check cycle finished, sleeping {interval} seconds\n")
         time.sleep(interval)
@@ -138,3 +147,14 @@ if __name__ == "__main__":
     init_db()
     threading.Thread(target=monitor_loop, daemon=True).start()
     app.run(host="0.0.0.0", port=8000)
+
+import requests
+
+TELEGRAM_TOKEN = "PASTE_BOT_TOKEN_HERE"
+
+def send_telegram(chat_id, text):
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    requests.post(url, json={
+        "chat_id": chat_id,
+        "text": text
+    })
