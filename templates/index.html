@@ -9,11 +9,30 @@
 <body>
 
 <h1>Проверка состояния</h1>
-<p class="meta">Проверяется каждые 5 минут • Формат времени: UTC</p>
+<p class="meta">Проверяется каждые 5 минут • Формат времени: UTC+3 (Москва)</p>
 
 <div id="cards"></div>
 
 <script>
+function formatMoscowTime(isoString) {
+  if (!isoString) {
+    return "Недоступность не определена (она отсутствовала)";
+  }
+
+  const date = new Date(isoString);
+
+  return date.toLocaleString("ru-RU", {
+    timeZone: "Europe/Moscow",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
+
+async function loadStatus() {
 async function loadStatus() {
   const res = await fetch("/api/status");
   const data = await res.json();
@@ -26,8 +45,8 @@ async function loadStatus() {
 
     card.innerHTML = `
       <h2>${site.url}</h2>
-      <p>Status: <strong>${site.status}</strong></p>
-      <p>Last downtime: ${site.last_downtime ?? "Недоступность не определена (она отсутствовала)"}</p>
+      <p>Текущее состояние: <strong>${site.status}</strong></p>
+      <p>Последний офлайн: ${formatMoscowTime(site.last_downtime)}</p>
       ${site.last_error ? `<p class="error">${site.last_error}</p>` : ""}
     `;
     container.appendChild(card);
@@ -40,4 +59,3 @@ setInterval(loadStatus, 30000);
 
 </body>
 </html>
-
