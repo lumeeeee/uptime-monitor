@@ -1,18 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Uptime Monitor</title>
-  <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<title>Uptime Monitor</title>
+<style>
+body {
+  font-family: sans-serif;
+  background: #f5f5f5;
+  padding: 20px;
+}
+.card {
+  background: white;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+}
+.online { color: green; }
+.offline { color: darkred; }
+small { color: #666; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>Uptime Monitor</h1>
-    <div id="meta"></div>
-  </header>
 
-  <main id="cards"></main>
+<h2>Uptime Monitor</h2>
+<p><small>Checked every 5 minutes · Time: UTC</small></p>
 
-  <script src="app.js"></script>
+<div id="sites"></div>
+
+<script>
+async function loadStatus() {
+  const res = await fetch("/api/status");
+  const data = await res.json();
+
+  const container = document.getElementById("sites");
+  container.innerHTML = "";
+
+  data.sites.forEach(site => {
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <strong>${site.url}</strong><br>
+      Status:
+      <span class="${site.status === 'Online' ? 'online' : 'offline'}">
+        ${site.status}
+      </span><br>
+      Last downtime: ${site.last_downtime}<br>
+      ${site.error ? "Error: " + site.error : ""}
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+loadStatus();
+setInterval(loadStatus, 30000);
+</script>
+
 </body>
 </html>
