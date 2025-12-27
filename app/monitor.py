@@ -2,6 +2,7 @@ import time
 from app.config import load_config
 from app.checker import check_site
 from app.models import insert_status_event
+from app.alerts.telegram import send_offline, send_recovery
 from app.models import (
     get_site,
     insert_site,
@@ -17,9 +18,15 @@ from app.models import (
 
 def monitor_loop():
     config = load_config()
+    TELEGRAM_TOKEN = config.get("telegram_bot_token")
     threshold = config.get("failure_threshold", 1)
     interval = config["check_interval_seconds"]
     sites = config["sites"]
+    incident_id = start_incident(url)
+    send_offline(url, error or "unknown", incident_id, TELEGRAM_TOKEN)
+    incident = close_incident(url)
+    if incident:
+        send_recovery(url, incident["duration"], incident["id"], TELEGRAM_TOKEN)
 
     while True:
         for url in sites:

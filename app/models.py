@@ -43,6 +43,33 @@ def create_tables():
             duration INTEGER
         )
         """)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS checks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            url TEXT NOT NULL,
+            status TEXT NOT NULL,
+            error TEXT,            
+            timestamp TEXT NOT NULL
+        )
+        """)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS alert_settings (
+            url TEXT PRIMARY KEY,
+            telegram_chat_id TEXT NOT NULL,
+            enabled INTEGER DEFAULT 1
+        )
+        """)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS alert_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            url TEXT,
+            type TEXT,
+            timestamp TEXT
+        )
+        """)
+
+
+
 
 
 
