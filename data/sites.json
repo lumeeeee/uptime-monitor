@@ -1,5 +1,5 @@
 {
-  "check_interval_seconds": 300,
+  "check_interval_seconds": 10,
   "failure_threshold": 2,
   "sites": [
     "https://ya.ru",
