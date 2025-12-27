@@ -1,1 +1,22 @@
 Just another checker for site
+app
+    static 
+        style.css
+    templates
+        index.html
+    __init__.py
+    checker.py
+    config.py
+    db.py
+    models.py
+    monitor.py
+    routes.py
+    data
+        sites.json
+        uptime.db
+    .gitignore
+    docker-compose.yml
+    Dockerfile
+    README.md
+    requirements.txt
+    run.py
