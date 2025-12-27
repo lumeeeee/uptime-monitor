@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Мониторинг доступности</title>
+<link rel="stylesheet" href="/static/style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+
+<h1>Мониторинг доступности</h1>
+<p class="meta">Проверяется каждые 5 минут • Время: UTC+3 (Москва)</p>
+
+<div id="cards"></div>
+
+<h2>Журнал доступности (последние 30)</h2>
+<div id="log"></div>
+
+
+<script>
+async function loadLog() {
+  const res = await fetch("/api/downtime-log");
+  const data = await res.json();
+  const container = document.getElementById("log");
+  container.innerHTML = "";
+
+  if (data.length === 0) {
+    container.innerHTML = "<p>Недоступностей не зафиксировано</p>";
+    return;
+  }
+
+  data.forEach(entry => {
+    const item = document.createElement("div");
+    item.className = "log-item";
+
+    item.innerHTML = `
+      <p><strong>${entry.url}</strong></p>
+      <p>Время: ${formatMoscowTime(entry.timestamp)}</p>
+      <p>Ошибка: ${entry.error ?? "—"}</p>
+    `;
+
+    container.appendChild(item);
+  });
+}
+
+function formatMoscowTime(iso) {
+  if (!iso) return "Недоступность не зафиксирована";
+
+  return new Date(iso).toLocaleString("ru-RU", {
+    timeZone: "Europe/Moscow",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
+
+async function loadStatus() {
+  const res = await fetch("/api/status");
+  const data = await res.json();
+  const container = document.getElementById("cards");
+  container.innerHTML = "";
+
+  data.forEach(site => {
+    const isOnline = site.status === "online";
+
+    const card = document.createElement("div");
+    card.className = "card " + (isOnline ? "online" : "offline");
+
+    card.innerHTML = `
+      <h2>${site.url}</h2>
+      <p>Статус: <strong>${isOnline ? "Доступен" : "Недоступен"}</strong></p>
+      <p>Последняя недоступность: ${formatMoscowTime(site.last_downtime)}</p>
+      ${site.last_error ? `<p class="error">Ошибка: ${site.last_error}</p>` : ""}
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+loadStatus();
+setInterval(loadStatus, 30000);
+loadStatus();
+loadLog();
+setInterval(() => {
+  loadStatus();
+  loadLog();
+}, 30000);
+
+</script>
+
+</body>
+</html>
