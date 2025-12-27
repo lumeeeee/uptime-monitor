@@ -33,6 +33,16 @@ def create_tables():
             timestamp TEXT NOT NULL      -- ISO UTC
         )
         """)
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS incidents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            url TEXT NOT NULL,
+            start_ts TEXT NOT NULL,
+            end_ts TEXT,
+            duration INTEGER
+        )
+        """)
+
 
 
 
