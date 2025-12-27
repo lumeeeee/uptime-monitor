@@ -167,15 +167,32 @@ def calculate_uptime(url: str, period_seconds: int):
             "status": prev["status"],
             "timestamp": since_iso
         })
+    else:
+        site = get_site(url)
+    if site:
+        timeline.append({
+            "status": site["status"],
+            "timestamp": since_iso
+        })
+
 
     timeline.extend(events)
 
     if not timeline:
+        site = get_site(url)
+        if site and site["status"] == "offline":
+            return {
+                "uptime_percent": 0.0,
+                "downtime_seconds": period_seconds,
+                "incidents": 1
+            }
+
         return {
             "uptime_percent": 100.0,
             "downtime_seconds": 0,
             "incidents": 0
         }
+
 
     downtime = 0
     incidents = 0
