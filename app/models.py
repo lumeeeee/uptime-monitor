@@ -231,3 +231,44 @@ def calculate_uptime(url: str, period_seconds: int):
         "incidents": incidents
     }
 
+
+    # ---------- INCIDENTS LOG ----------
+
+def get_open_incident(url):
+    with get_conn() as conn:
+        conn.row_factory = dict_factory
+        return conn.execute(
+            "SELECT * FROM incidents WHERE url = ? AND end_ts IS NULL",
+            (url,)
+        ).fetchone()
+
+def start_incident(url):
+    now = datetime.now(timezone.utc).isoformat()
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO incidents (url, start_ts) VALUES (?, ?)",
+            (url, now)
+        )
+        
+def close_incident(url):
+    now = datetime.now(timezone.utc)
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT id, start_ts FROM incidents WHERE url = ? AND end_ts IS NULL",
+            (url,)
+        ).fetchone()
+
+        if not row:
+            return
+
+        start = datetime.fromisoformat(row[1])
+        duration = int((now - start).total_seconds())
+
+        conn.execute(
+            """
+            UPDATE incidents
+            SET end_ts = ?, duration = ?
+            WHERE id = ?
+            """,
+            (now.isoformat(), duration, row[0])
+        )

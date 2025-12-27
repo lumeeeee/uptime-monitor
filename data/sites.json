@@ -1,6 +1,6 @@
 {
   "check_interval_seconds": 300,
-  "admin_secret": "problem",
+  "failure_threshold": 2,
   "sites": [
     "https://ya.ru",
     "https://testtest123123123125512.ru"
