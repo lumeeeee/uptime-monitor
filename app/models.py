@@ -199,6 +199,18 @@ def calculate_uptime(url: str, period_seconds: int):
     }
 
 
+# ---------- STATUS CHECKS LOG ----------
+
+def insert_check(url: str, status: str, error: str | None):
+    ts = datetime.now(timezone.utc).isoformat()
+    with get_conn() as conn:
+        conn.execute(
+            """
+            INSERT INTO checks (url, status, error, timestamp)
+            VALUES (?, ?, ?, ?)
+            """,
+            (url, status, error, ts)
+        )
 
     # ---------- INCIDENTS LOG ----------
 

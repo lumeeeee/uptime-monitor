@@ -23,6 +23,7 @@ def monitor_loop():
     while True:
         for url in sites:
             status, error = check_site(url)
+            insert_check(url, status, error)
             existing = get_site(url)
             
             if not existing:
