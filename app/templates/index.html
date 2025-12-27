@@ -18,6 +18,25 @@
 
 
 <script>
+let metricsCache = {};
+
+async function loadMetrics() {
+  const res = await fetch("/api/metrics");
+  metricsCache = await res.json();
+}
+
+function formatDuration(seconds) {
+  if (!seconds || seconds <= 0) return "—";
+
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+
+  if (m > 0) {
+    return `${m} мин ${s} сек`;
+  }
+  return `${s} сек`;
+}
+
 async function loadLog() {
   const res = await fetch("/api/downtime-log");
   const data = await res.json();
@@ -68,20 +87,41 @@ async function loadStatus() {
 
     const card = document.createElement("div");
     card.className = "card " + (isOnline ? "online" : "offline");
+    const sla = metricsCache[site.url];
 
     card.innerHTML = `
-      <h2>${site.url}</h2>
-      <p>Статус: <strong>${isOnline ? "Доступен" : "Недоступен"}</strong></p>
-      <p>Последняя недоступность: ${formatMoscowTime(site.last_downtime)}</p>
-      ${site.last_error ? `<p class="error">Ошибка: ${site.last_error}</p>` : ""}
-    `;
+  <h2>${site.url}</h2>
+  <p>Статус: <strong>${isOnline ? "Доступен" : "Недоступен"}</strong></p>
+  <p>Последняя недоступность: ${formatMoscowTime(site.last_downtime)}</p>
+  ${site.last_error ? `<p class="error">Ошибка: ${site.last_error}</p>` : ""}
+
+  ${sla ? `
+    <div class="sla">
+      <p><strong>Uptime</strong></p>
+      <p>24ч: ${sla["24h"].uptime_percent}%</p>
+      <p>7д: ${sla["7d"].uptime_percent}%</p>
+      <p>30д: ${sla["30d"].uptime_percent}%</p>
+      <p class="downtime">
+        Downtime (30д): ${formatDuration(sla["30d"].downtime_seconds)}
+      </p>
+    </div>
+  ` : ""}
+`;
+
 
     container.appendChild(card);
   });
 }
 
-loadStatus();
-setInterval(loadStatus, 30000);
+async function refresh() {
+  await loadMetrics();
+  await loadStatus();
+  await loadLog();
+}
+
+refresh();
+setInterval(refresh, 30000);
+
 loadStatus();
 loadLog();
 setInterval(() => {
