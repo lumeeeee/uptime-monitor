@@ -1,5 +1,6 @@
 from flask import jsonify, render_template
 from app.models import get_all_sites, get_last_downtimes, calculate_uptime, get_incidents
+from app.alerts.telegram import handle_telegram_command
 
 
 def register_routes(app):
@@ -37,4 +38,10 @@ def register_routes(app):
     @app.route("/api/incidents")
     def api_incidents():
         return jsonify(get_incidents())
+    
+    @app.route("/telegram/webhook", methods=["POST"])
+    def telegram_webhook():
+        data = request.json
+        handle_telegram_command(data)
+        return "ok"
 

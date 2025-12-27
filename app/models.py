@@ -239,7 +239,7 @@ def insert_check(url: str, status: str, error: str | None):
             (url, status, error, ts)
         )
 
-    # ---------- INCIDENTS LOG ----------
+# ---------- INCIDENTS LOG ----------
 
 def get_open_incident(url):
     with get_conn() as conn:
@@ -316,5 +316,21 @@ def get_incidents(limit: int = 50):
             (limit,)
         ).fetchall()
 
+
+# ---------- GET STATUS FOR TELEGRAM ----------
+
+def get_last_check(url: str):
+    with get_conn() as conn:
+        conn.row_factory = dict_factory
+        return conn.execute(
+            """
+            SELECT status, error, timestamp
+            FROM checks
+            WHERE url = ?
+            ORDER BY timestamp DESC
+            LIMIT 1
+            """,
+            (url,)
+        ).fetchone()
 
 

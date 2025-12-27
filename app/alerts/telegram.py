@@ -1,6 +1,7 @@
 import requests
 from datetime import datetime, timezone
 from app.db import get_conn
+from app.models import get_all_sites, get_last_check
 
 TELEGRAM_API = "https://api.telegram.org/bot{token}/sendMessage"
 TIMEOUT = 5
@@ -92,5 +93,54 @@ def send_recovery(url: str, duration: int, incident_id: int, token: str):
         f"<b>Incident ID:</b> {incident_id}"
     )
 
+
     send_message(token, settings["telegram_chat_id"], text)
     log_alert(url, "recovery", incident_id)
+
+def handle_telegram_command(data: dict):
+    message = data.get("message")
+    if not message:
+        return
+
+    text = message.get("text", "")
+    chat_id = message["chat"]["id"]
+
+    if text.strip() == "/start":
+        reply_with_status(chat_id)
+
+def format_time(iso: str | None):
+    if not iso:
+        return "не было"
+    return datetime.fromisoformat(iso).strftime("%d.%m.%Y %H:%M:%S")
+
+def reply_with_status(chat_id: str):
+    sites = get_all_sites()
+
+    lines = ["📊 <b>Статус сайтов</b>\n"]
+
+    for site in sites:
+        url = site["url"]
+        status = site["status"]
+        last_down = site["last_downtime"]
+
+        last_check = get_last_check(url)
+        if last_check:
+            checked_at = format_time(last_check["timestamp"])
+        else:
+            checked_at = "—"
+
+        status_icon = "✅" if status == "online" else "❌"
+
+        lines.append(
+            f"{status_icon} <b>{url}</b>\n"
+            f"Статус: {status}\n"
+            f"Последняя проверка: {checked_at}\n"
+            f"Последняя недоступность: {format_time(last_down)}\n"
+        )
+
+    send_message(
+        token=TELEGRAM_TOKEN,
+        chat_id=chat_id,
+        text="\n".join(lines)
+    )
+
