@@ -24,7 +24,11 @@ def monitor_loop():
         for url in sites:
             status, error = check_site(url)
             existing = get_site(url)
-
+            
+            if not existing:
+                insert_site(url, "online", None)
+                existing = get_site(url)
+            
             current_fail_count = existing["fail_count"] or 0
             prev_status = existing["status"]
 

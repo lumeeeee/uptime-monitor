@@ -13,7 +13,8 @@ def create_tables():
             url TEXT PRIMARY KEY,
             status TEXT NOT NULL,
             last_downtime TEXT,
-            last_error TEXT
+            last_error TEXT,
+            fail_count INTEGER DEFAULT 0
         )
         """)
 
