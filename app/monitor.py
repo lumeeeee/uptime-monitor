@@ -25,44 +25,32 @@ def monitor_loop():
             status, error = check_site(url)
             existing = get_site(url)
 
-            if existing is None:
-                insert_site(url, status, error)
-
-                if status == "offline":
-                    start_incident(url)
-                    mark_site_down(url, error or "unknown")
-
-                continue
-
+            current_fail_count = existing["fail_count"] or 0
             prev_status = existing["status"]
 
-            # ONLINE - OFFLINE 
+            # --- OFFLINE ---
             if status == "offline":
-                fail_count = (existing["fail_count"] or 0) + 1
+                new_fail_count = current_fail_count + 1
+                update_fail_count(url, new_fail_count)
+
+                # старт инцидента ТОЛЬКО при достижении threshold
+                if prev_status == "online" and new_fail_count >= threshold:
+                    start_incident(url)
+                    mark_site_down(url, error or "unknown")
+                    insert_status_event(url, "offline")
 
                 update_site_status(url, "offline", error)
-                update_fail_count(url, fail_count)
 
-            if prev_status == "online" and fail_count >= threshold:
-                start_incident(url)
-                mark_site_down(url, error or "unknown")
-                insert_status_event(url, "offline")
+            # --- ONLINE ---
+            else:
+                # если сайт восстановился — закрываем инцидент
+                if prev_status == "offline":
+                    close_incident(url)
+                    insert_status_event(url, "online")
 
-
-            # OFFLINE - ONLINE
-            elif prev_status == "offline" and status == "online":
-                close_incident(url)
+                # сбрасываем счётчик
                 update_fail_count(url, 0)
-                insert_status_event(url, "online")
                 update_site_status(url, "online", None)
-            
-
-            # Обновляем текущее состояние
-            update_site_status(
-                url,
-                status,
-                error if status == "offline" else None
-            )
 
         time.sleep(interval)
 
