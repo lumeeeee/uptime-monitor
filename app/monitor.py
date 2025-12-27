@@ -11,6 +11,7 @@ from app.models import (
     start_incident,
     close_incident,
     update_fail_count,
+    insert_check,
 )
 
 
