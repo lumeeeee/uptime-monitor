@@ -1,5 +1,5 @@
 from flask import jsonify, render_template
-from app.models import get_all_sites, get_last_downtimes, calculate_uptime
+from app.models import get_all_sites, get_last_downtimes, calculate_uptime, get_incidents
 
 
 def register_routes(app):
@@ -33,4 +33,8 @@ def register_routes(app):
         }
 
         return jsonify(result)
+
+    @app.route("/api/incidents")
+    def api_incidents():
+        return jsonify(get_incidents())
 

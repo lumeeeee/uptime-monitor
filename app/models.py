@@ -262,5 +262,19 @@ def get_incidents_for_period(url: str, since_iso: str):
             """,
             (url, since_iso)
         ).fetchall()
+    
+def get_incidents(limit: int = 50):
+    with get_conn() as conn:
+        conn.row_factory = dict_factory
+        return conn.execute(
+            """
+            SELECT url, start_ts, end_ts, duration
+            FROM incidents
+            ORDER BY start_ts DESC
+            LIMIT ?
+            """,
+            (limit,)
+        ).fetchall()
+
 
 
