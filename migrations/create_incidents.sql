@@ -1,0 +1,2 @@
+ALTER TABLE downtime_log ADD COLUMN incident_id INTEGER;
+ALTER TABLE sites ADD COLUMN fail_count INTEGER DEFAULT 0;

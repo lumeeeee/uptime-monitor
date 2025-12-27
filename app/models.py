@@ -167,69 +167,36 @@ def calculate_uptime(url: str, period_seconds: int):
     since = now - timedelta(seconds=period_seconds)
     since_iso = since.isoformat()
 
-    events = get_status_events(url, since_iso)
-    prev = get_last_status_before(url, since_iso)
-
-    timeline = []
-
-    if prev:
-        timeline.append({
-            "status": prev["status"],
-            "timestamp": since_iso
-        })
-    else:
-        site = get_site(url)
-    if site:
-        timeline.append({
-            "status": site["status"],
-            "timestamp": since_iso
-        })
-
-
-    timeline.extend(events)
-
-    if not timeline:
-        site = get_site(url)
-        if site and site["status"] == "offline":
-            return {
-                "uptime_percent": 0.0,
-                "downtime_seconds": period_seconds,
-                "incidents": 1
-            }
-
-        return {
-            "uptime_percent": 100.0,
-            "downtime_seconds": 0,
-            "incidents": 0
-        }
-
+    incidents = get_incidents_for_period(url, since_iso)
 
     downtime = 0
-    incidents = 0
+    incidents_count = 0
 
-    for i in range(len(timeline)):
-        current = timeline[i]
-        start = datetime.fromisoformat(current["timestamp"])
+    for inc in incidents:
+        start = datetime.fromisoformat(inc["start_ts"])
+        end = (
+            datetime.fromisoformat(inc["end_ts"])
+            if inc["end_ts"]
+            else now
+        )
 
-        if i + 1 < len(timeline):
-            end = datetime.fromisoformat(timeline[i + 1]["timestamp"])
-        else:
-            end = now
+        effective_start = max(start, since)
+        effective_end = min(end, now)
 
-        delta = (end - start).total_seconds()
+        if effective_end > effective_start:
+            downtime += (effective_end - effective_start).total_seconds()
+            incidents_count += 1
 
-        if current["status"] == "offline":
-            downtime += delta
-            incidents += 1
-
+    downtime = int(downtime)
     uptime = max(0, period_seconds - downtime)
     percent = round((uptime / period_seconds) * 100, 3)
 
     return {
         "uptime_percent": percent,
-        "downtime_seconds": int(downtime),
-        "incidents": incidents
+        "downtime_seconds": downtime,
+        "incidents": incidents_count
     }
+
 
 
     # ---------- INCIDENTS LOG ----------
@@ -249,7 +216,7 @@ def start_incident(url):
             "INSERT INTO incidents (url, start_ts) VALUES (?, ?)",
             (url, now)
         )
-        
+
 def close_incident(url):
     now = datetime.now(timezone.utc)
     with get_conn() as conn:
@@ -272,3 +239,28 @@ def close_incident(url):
             """,
             (now.isoformat(), duration, row[0])
         )
+
+def update_fail_count(url: str, count: int):
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE sites SET fail_count = ? WHERE url = ?",
+            (count, url)
+        )
+
+def get_incidents_for_period(url: str, since_iso: str):
+    with get_conn() as conn:
+        conn.row_factory = dict_factory
+        return conn.execute(
+            """
+            SELECT start_ts, end_ts
+            FROM incidents
+            WHERE url = ?
+              AND (
+                end_ts IS NULL
+                OR end_ts >= ?
+              )
+            """,
+            (url, since_iso)
+        ).fetchall()
+
+
