@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 from .db import get_conn
 
+def dict_factory(cursor, row):
+    return {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
 
 # ---------- INIT ----------
 
@@ -29,12 +31,13 @@ def create_tables():
 
 def get_all_sites():
     with get_conn() as conn:
-        conn.row_factory = lambda c, r: dict(zip([col[0] for col in c.description], r))
+        conn.row_factory = dict_factory
         return conn.execute("SELECT * FROM sites").fetchall()
 
 
 def get_site(url: str):
     with get_conn() as conn:
+        conn.row_factory = dict_factory
         return conn.execute(
             "SELECT * FROM sites WHERE url = ?",
             (url,)
@@ -83,7 +86,7 @@ def mark_site_down(url: str, error: str):
 
 def get_last_downtimes(limit: int = 30):
     with get_conn() as conn:
-        conn.row_factory = lambda c, r: dict(zip([col[0] for col in c.description], r))
+        conn.row_factory = dict_factory
         return conn.execute(
             """
             SELECT url, timestamp, error
