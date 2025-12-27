@@ -22,8 +22,10 @@ def monitor_loop():
             existing = get_site(url)
 
             if existing is None:
-                    insert_site(url, status, error)
-                    insert_status_event(url, status)
+                insert_site(url, status, error)
+                if status == "offline":
+                    mark_site_down(url, error or "unknown")
+
 
             elif status != existing["status"]:
                 insert_status_event(url, status)
